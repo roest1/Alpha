@@ -15,6 +15,12 @@
 
 * Ways to compute momentum and volatility
 
+## Notes:
+
+* Heikin-Ashi_Candlestick/backtest.py is the only py file with stats calculation (will be used later probably)
+  
+  
+
 ---
 
 ## Jobs
@@ -31,12 +37,6 @@
 
 * TechnicalIndicators/
     - DualThrust
-    - Heikin-Ashi_Candlestick
-    - LondonBreakout
-    - MACD_Oscillator
-    - ParabolicSAR
-    - RelativeStrengthIndexPatternRecognition
-    - ShootingStar
 
 ### Trevor's doing:
 
