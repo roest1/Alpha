@@ -4,7 +4,7 @@
 
 ## To Do:
 
-* Get Data
+* Get Data (WRDS Cloud?)
 
 * Create volatility X momentum matrix
     - Calculations for volatility and momentum
@@ -19,8 +19,6 @@
 
 * Heikin-Ashi_Candlestick/backtest.py is the only py file with stats calculation (will be used later probably)
   
-  
-
 ---
 
 ## Jobs

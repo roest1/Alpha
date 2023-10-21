@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 import yfinance as yf
 import scipy.integrate
 import scipy.stats
-
 """
 heikin_ashi()
 
@@ -93,10 +92,12 @@ candlestick()
 
 to plot candlesticks
 """
-def candlestick(df,ax=None,titlename='',highcol='High',lowcol='Low',
-                opencol='Open',closecol='Close',xcol='Date',
-                colorup='r',colordown='g',**kwargs):  
-    
+#def candlestick(df,ax=None,titlename='',highcol='High',lowcol='Low',
+#                opencol='Open',closecol='Close',xcol='Date',
+#               colorup='r',colordown='g',**kwargs):  
+def candlestick(df, ax=None, titlename='', highcol='High', lowcol='Low',
+                opencol='Open', closecol='Close', xcol='Date',
+                colorup=(1, 0, 0), colordown=(0, 1, 0), **kwargs):  
     #bar width
     #use 0.6 by default
     dif=[(-3+i)/10 for i in range(7)]
@@ -125,6 +126,7 @@ def candlestick(df,ax=None,titlename='',highcol='High',lowcol='Low',
                      [df[highcol].iloc[i],
                       max(df[opencol].iloc[i],
                           df[closecol].iloc[i])*1.001],c='k',**kwargs)
+           
     
         #same as high
         if df[lowcol].iloc[i]!=min(df[opencol].iloc[i],df[closecol].iloc[i]):             
@@ -133,6 +135,7 @@ def candlestick(df,ax=None,titlename='',highcol='High',lowcol='Low',
                      [df[lowcol].iloc[i],
                       min(df[opencol].iloc[i],
                           df[closecol].iloc[i])*0.999],c='k',**kwargs)
+            
         
         #treat the bar as fill between
         plt.fill_between(x,y1,y2,

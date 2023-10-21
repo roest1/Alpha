@@ -8,7 +8,7 @@ macd()
 
 Simple moving average
 """
-def macd(signals):
+def macd(signals, ma1, ma2):
     
     
     signals['ma1']=signals['Close'].rolling(window=ma1,min_periods=1,center=False).mean()
@@ -22,9 +22,9 @@ signal_generation()
 Short(MA) > Long(MA) ⟹ Long hold
 Short(MA) < Long(MA) ⟹ clear positions
 """
-def signal_generation(df,method):
+def signal_generation(df,method, ma1, ma2):
     
-    signals=method(df)
+    signals=method(df, ma1, ma2)
     signals['positions']=0
 
     #positions becomes and stays one once the short moving average is above long moving average
@@ -91,36 +91,36 @@ def main():
     #so it is two week moving average versus one month moving average
     #for now, the ideal choice would be 10 and 21
     
-    global ma1,ma2,stdate,eddate,ticker,slicer
+    #global ma1,ma2,stdate,eddate,ticker,slicer
 
     #macd is easy and effective
     #there is just one issue
     #entry signal is always late
     #watch out for downward EMA spirals!
-    """
+  
     # in 2020, there was a significant fluctuation due to 
     # COVID 
     ma1 = 12
     ma2 = 26
-    stdate = 2020-01-01
-    eddate = 2020-12-31
-    ticker = AAPL
-    """
-    ma1=int(input('ma1:')) # short moving average : typically 12
-    ma2=int(input('ma2:')) # long moving average : typically 26
-    stdate=input('start date in format yyyy-mm-dd:')
-    eddate=input('end date in format yyyy-mm-dd:')
-    ticker=input('ticker:')
+    stdate = '2020-01-01'
+    eddate = '2020-12-31'
+    ticker = 'AAPL'
+  
+    # ma1=int(input('ma1:')) # short moving average : typically 12
+    # ma2=int(input('ma2:')) # long moving average : typically 26
+    # stdate=input('start date in format yyyy-mm-dd:')
+    # eddate=input('end date in format yyyy-mm-dd:')
+    # ticker=input('ticker:')
 
     #slicing the downloaded dataset
     #if the dataset is too large, backtesting plot would look messy
     #you get too many markers cluster together
-    slicer=int(input('slicing:')) # set to 0 to see performance for entire year
-
+    #slicer=int(input('slicing:')) # set to 0 to see performance for entire year
+    slicer = 0
     #downloading data
     df=yf.download(ticker,start=stdate,end=eddate)
     
-    new=signal_generation(df,macd)
+    new=signal_generation(df,macd, ma1, ma2)
     new=new[slicer:]
     plot(new, ticker)
 
