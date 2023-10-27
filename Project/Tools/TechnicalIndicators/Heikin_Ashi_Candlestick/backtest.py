@@ -4,6 +4,11 @@ import matplotlib.pyplot as plt
 import yfinance as yf
 import scipy.integrate
 import scipy.stats
+import sys
+from PyQt5.QtWidgets import QApplication, QTableWidget, QTableWidgetItem, QVBoxLayout, QWidget
+from PyQt5.QtCore import Qt
+
+
 """
 heikin_ashi()
 
@@ -287,6 +292,41 @@ def mdd(series):
             minimum=(series[i]/max(series[:i])-1)
 
     return minimum
+class DataFrameViewer(QWidget):
+    def __init__(self, df):
+        super().__init__()
+
+        # Set up the user interface
+        self.layout = QVBoxLayout()
+
+        # Create a table and set its properties
+        self.table = QTableWidget()
+        self.table.setRowCount(df.shape[0])
+        self.table.setColumnCount(df.shape[1])
+        self.table.setHorizontalHeaderLabels(df.columns)
+        self.table.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
+        self.table.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
+        self.table.setEditTriggers(QTableWidget.NoEditTriggers)
+
+        # Populate the table
+        for i in range(df.shape[0]):
+            for j in range(df.shape[1]):
+                self.table.setItem(i, j, QTableWidgetItem(str(df.iat[i, j])))
+
+        # Add table to the layout
+        self.layout.addWidget(self.table)
+
+        # Set the layout to the QWidget
+        self.setLayout(self.layout)
+
+        # Set the title and show the window
+        self.setWindowTitle("DataFrame Viewer")
+        self.show()
+
+def display_df(df):
+    app = QApplication(sys.argv)
+    viewer = DataFrameViewer(df)
+    sys.exit(app.exec_())
 
 """
 stats()
@@ -355,8 +395,9 @@ def stats(portfolio,trading_signals,stdate,eddate,capital0=10000):
     stats['profit per trade'].iloc[0]=(portfolio['total asset'].iloc[-1]-capital0)/stats['numbers of trades'].iloc[0]
 
     del stats[0]
-    print(stats)
-
+    #print(stats)
+    stats.to_csv("stats.csv")
+    display_df(stats)
 
 def main():
     
