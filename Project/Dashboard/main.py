@@ -4,8 +4,11 @@ from vizro import Vizro
 import vizro.models as vm
 import pandas as pd
 from typing_extensions import Literal
-from dash import Input, Output, State, callback, callback_context, dcc, html
-import datetime
+from dash import Input, Output, State, callback, callback_context, dcc, html, dash_table
+from monte_carlo import *
+from oscillator import *
+from typing import List, Any, Callable
+
 
 df = pd.read_csv("/Users/rileyoest/VS_Code/AlphaScratch/Project/Dashboard/NASDAQ/stock_data.csv")
 df["DateTime"] = pd.to_datetime(df["Date"]).astype(int) / 10**9  # Convert to Unix timestamp
@@ -13,7 +16,6 @@ df["DateTime"] = pd.to_datetime(df["Date"]).astype(int) / 10**9  # Convert to Un
 
 """
 Need to update toolkit in slider to display date range
-
 """
 class TooltipNonCrossRangeSlider(vm.RangeSlider):
     """Custom numeric multi-selector `TooltipNonCrossRangeSlider`."""
@@ -112,7 +114,32 @@ class TooltipNonCrossRangeSlider(vm.RangeSlider):
             ],
             className="selector_container",
         )
-    
+
+
+# DFFunction = Callable[[pd.DataFrame], pd.DataFrame]
+
+# class DataFrameDisplay(vm.VizroBaseModel):
+#     """New custom component `DataFrameDisplay`."""
+
+#     type: Literal["dataframedisplay"] = "dataframedisplay"
+#     data: Any
+#     function: DFFunction
+
+#     @property
+#     def dataframe(self) -> pd.DataFrame:
+#         # Check if data is already a DataFrame. If not, try to convert it to one.
+#         if isinstance(self.data, pd.DataFrame):
+#             df = self.data
+#         else:
+#             df = pd.DataFrame(self.data)
+#         return self.function(df)
+
+#     def build(self):
+#         return dash_table.DataTable(
+#             columns=[{"name": col, "id": col} for col in self.dataframe.columns],
+#             data=self.dataframe.to_dict("records"),
+#         )
+
 
 home_page = vm.Page(
     title="Alpha Generator",
@@ -155,10 +182,18 @@ def select_range(df, start, end, symbol=None):
 dfplot = select_range(df, df['Date'].min(), df['Date'].max())
 
 vm.Filter.add_type("selector", TooltipNonCrossRangeSlider)
+#vm.Page.add_type("components", DataFrameDisplay)
 
 back_test = vm.Page(
     title="Back Test",
+    layout=vm.Layout(grid=[[i] for i in range(15)], # range(len(components))
+                     row_min_height="350px"),
     components=[
+        vm.Card(
+            text="""
+            # Select Stock & Date Range
+            """,
+        ),
         vm.Graph(
             id="stock_price",
             figure=stock_price_plot(dfplot, "Date", "Close"),
@@ -169,40 +204,106 @@ back_test = vm.Page(
         ),
         vm.Card(
             text="""
-            ### Go to Plot
+            # Indicators
 
-            Plot
             """,
-            href="/plot",
         ),
-    
+        vm.Card(
+            text="""
+            # Monte Carlo
+
+            * Most ML applications in trading are leaned towards analytics rather than prediction
+
+            * Monte Carlo refers to the computer simulation of massive amounts of random events
+                - Extremely powerful in studies of stochastic processes
+
+            * Cannot accurately predict the direction of the momentum under extreme events (ie: 2008 financial crisis)
+
+            * Weakness of Monte Carlo is you can't predict something in the future if it has never happened in the past
+
+            """,
+        ),
+        vm.Graph(
+            id="monte_carlo_simulation",
+            figure=monte_carlo_simulation(dfplot),
+        ),
+        vm.Graph(
+            id="monte_carlo_forcast",
+            figure=monte_carlo_forecast(dfplot),
+        ),
+        # vm.Graph(
+        #     id="monte_carlo_test",
+        #     figure=monte_carlo_test(dfplot),
+        # ),
+        vm.Card(
+            text="""
+            # Awesome Oscillator (upgraded MACD)
+
+            * Momentum strategy focussed on moving average
+
+            * Instead of taking moving average on close price, it is derived from the mean of high and low prices
+
+            * similar to MACD oscillator, it takes both short and long term moving averages to construct.
+
+            * Various strategies to generate signals, such as traditional moving average divergence, twin peaks (W pattern), and saucer
+
+            * We will use saucer in this example
+
+            * Saucer has the power to beat the slow response of traditional divergence
+                - Faster response doesn't guarantee a less risky or more profitable outcome
+
+            * We will use MACD oscillator as control group to test if the awesome oscillator outperforms it
+
+            [Awesome Oscillator](https://www.tradingview.com/support/solutions/43000501826-awesome-oscillator-ao/)
+
+            """,
+        ),
+        vm.Graph(
+            id="awesome_positions",
+            figure=plot_awesome_positions_signals(dfplot),
+        ),
+        vm.Graph(
+            id="macd_positions",
+            figure=plot_macd_positions_signals(dfplot),
+        ),
+        vm.Graph(
+            id="awesome_oscillator",
+            figure=plot_awesome_oscillator_bar(dfplot),
+        ),
+        vm.Graph(
+            id="macd_oscillator",
+            figure=plot_macd_oscillator_bar(dfplot),
+        ),
+        vm.Graph(
+            id="awesome_ma",
+            figure=plot_awesome_ma(dfplot),
+        ),
+        vm.Graph(
+            id="macd_ma",
+            figure=plot_macd_ma(dfplot),
+        ), 
+        vm.Graph(
+            id="awesome_vs_macd_profit",
+            figure=plot_macd_vs_awesome_profit(dfplot),
+        ), 
+        # DataFrameDisplay(
+        #     id="my_dataframe_display",
+        #     data=dfplot,
+        #     function=macd_vs_awesome_stats,
+        # )
     ],
     controls=[
-        vm.Filter(column="Symbol", targets=["stock_price", "volume"]),  # Dropdown filter for the Symbol column
+        # Change Symbol Filter to only be able to select one stock
+        vm.Filter(column="Symbol", targets=["stock_price", "volume", "monte_carlo_simulation", "monte_carlo_forcast", "awesome_positions", "macd_positions", "awesome_oscillator", "macd_oscillator", "awesome_ma", "macd_ma", "awesome_vs_macd_profit"]),  # Dropdown filter for the Symbol column
         vm.Filter(
             column="DateTime",
-            targets=["stock_price", "volume"],
+            targets=["stock_price", "volume", "monte_carlo_simulation", "monte_carlo_forcast", "awesome_positions", "macd_positions", "awesome_oscillator", "macd_oscillator", "awesome_ma", "macd_ma", "awesome_vs_macd_profit"],
             selector=TooltipNonCrossRangeSlider(), 
         ),
     ],
 )
 
-plot = vm.Page(
-    title="Plot",
-    components=[
-        vm.Graph(
-            id="stock_price_solid",
-            figure=stock_price_plot(dfplot, "Date", "Close"),
-        ),
-        vm.Graph(
-            id="volume_solid",
-            figure=volume_plot(dfplot, "Date", "Volume"),
-        )
-    ],
-)
-
-
-dashboard = vm.Dashboard(pages=[home_page, back_test, plot])
+dashboard = vm.Dashboard(pages=[home_page, back_test])
 
 if __name__ == "__main__":
     Vizro().build(dashboard).run()

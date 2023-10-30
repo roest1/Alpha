@@ -1,16 +1,15 @@
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import yfinance as yf
 
 """
 ewma_macd()
 
 MACD with EWMA function to apply exponential smoothing
 """
-def ewmacd(signals, ma1, ma2):
-    signals['macd ma1']=signals['Close'].ewm(span=ma1).mean()    
-    signals['macd ma2']=signals['Close'].ewm(span=ma2).mean()   
+def ewmacd(df, ma1, ma2):
+    signals = df
+    signals['macd ma1'] = signals['Close'].ewm(span=ma1).mean()    
+    signals['macd ma2'] = signals['Close'].ewm(span=ma2).mean()   
     
     return signals
 
@@ -39,7 +38,9 @@ def awesome_ma(signals):
 
 def awesome_signal_generation(df,method):
     
-    signals=method(df)
+    signals=method(df).copy()
+    if 'level_0' in signals.columns:
+        signals.rename(columns={'level_0': 'old_index'}, inplace=True)
     signals.reset_index(inplace=True)
     signals['awesome signals']=0
     signals['awesome oscillator']=signals['awesome ma1']-signals['awesome ma2']  
@@ -100,76 +101,110 @@ def awesome_signal_generation(df,method):
     
     return signals
 
+import plotly.graph_objects as go
 
-def plot(new,ticker):
+from vizro.models.types import capture
+@capture("graph")
+def plot_awesome_positions_signals(data_frame: pd.DataFrame):
+    df = awesome_signal_generation(data_frame, awesome_ma)
+
+    fig = go.Figure()
+
+    fig.add_trace(go.Scatter(x=df['Date'], y=df['Close'], mode='lines', name='Close'))
     
-    #positions
-    fig=plt.figure()
-    ax=fig.add_subplot(211)
+    fig.add_trace(go.Scatter(x=df[df['awesome signals'] == 1]['Date'], 
+                             y=df['awesome ma1'][df['awesome signals'] == 1], 
+                             mode='markers', 
+                             marker=dict(color='green', size=10, symbol='triangle-up'), 
+                             name='Buy Signal'))
 
-    new['Close'].plot(label=ticker)
-    ax.plot(new.loc[new['awesome signals']==1].index,new['Close'][new['awesome signals']==1],label='AWESOME LONG',lw=0,marker='^',c='g')
-    ax.plot(new.loc[new['awesome signals']==-1].index,new['Close'][new['awesome signals']==-1],label='AWESOME SHORT',lw=0,marker='v',c='r')
+    fig.add_trace(go.Scatter(x=df[df['awesome signals'] == -1]['Date'], 
+                             y=df['awesome ma1'][df['awesome signals'] == -1], 
+                             mode='markers', 
+                             marker=dict(color='red', size=10, symbol='triangle-down'), 
+                             name='Sell Signal'))
 
-    plt.legend(loc='best')
-    plt.grid(True)
-    plt.title('Positions')
+    fig.update_layout(title='AWESOME Oscillator Buy/Sell Signals')
 
-    bx=fig.add_subplot(212,sharex=ax)
-    new['Close'].plot(label=ticker)
-    bx.plot(new.loc[new['macd signals']==1].index,new['Close'][new['macd signals']==1],label='MACD LONG',lw=0,marker='^',c='g')
-    bx.plot(new.loc[new['macd signals']==-1].index,new['Close'][new['macd signals']==-1],label='MACD SHORT',lw=0,marker='v',c='r')
+    return fig
 
-    plt.legend(loc='best')
-    plt.grid(True)
-    plt.show()
 
+
+@capture("graph")
+def plot_macd_positions_signals(data_frame: pd.DataFrame):
+    df = signal_generation(data_frame, ewmacd, 5, 34)
+
+    fig = go.Figure()
+
+    fig.add_trace(go.Scatter(x=df['Date'], y=df['Close'], mode='lines', name='Close'))
     
-    #oscillator
-    fig=plt.figure()
-    cx=fig.add_subplot(211)
+    fig.add_trace(go.Scatter(x=df[df['macd signals'] == 1]['Date'], 
+                             y=df['macd ma1'][df['macd signals'] == 1], 
+                             mode='markers', 
+                             marker=dict(color='green', size=10, symbol='triangle-up'), 
+                             name='Buy Signal'))
 
-    c=np.where(new['Open']>new['Close'],'r','g')
-    cx.bar(range(len(new)),new['awesome oscillator'],color=c,label='awesome oscillator')
+    fig.add_trace(go.Scatter(x=df[df['macd signals'] == -1]['Date'], 
+                             y=df['macd ma1'][df['macd signals'] == -1], 
+                             mode='markers', 
+                             marker=dict(color='red', size=10, symbol='triangle-down'), 
+                             name='Sell Signal'))
 
-    plt.grid(True)
-    plt.legend(loc='best')
-    plt.title('Oscillator')
+    fig.update_layout(title='MACD Oscillator Buy/Sell Signals')
 
-    dx=fig.add_subplot(212,sharex=cx)
+    return fig
 
-    new['macd oscillator'].plot(kind='bar',label='macd oscillator')
+@capture("graph")
+def plot_awesome_oscillator_bar(data_frame: pd.DataFrame):
+    df = awesome_signal_generation(data_frame, awesome_ma)
 
-    plt.grid(True)
-    plt.legend(loc='best')
-    plt.xlabel('')
-    plt.xticks([])
-    plt.show()
+    fig = go.Figure()
+
+    colors = np.where(df['Open'] > df['Close'], 'red', 'green')
+    fig.add_trace(go.Bar(x=df['Date'], y=df['awesome oscillator'], marker_color=colors, name='Awesome Oscillator'))
+
+    fig.update_layout(title='AWESOME Oscillator Bar')
+
+    return fig
+
+@capture("graph")
+def plot_macd_oscillator_bar(data_frame: pd.DataFrame):
+    df = signal_generation(data_frame, ewmacd, 5, 34)
+
+    fig = go.Figure()
+
+    fig.add_trace(go.Bar(x=df['Date'], y=df['macd oscillator'], name='MACD Oscillator'))
+
+    fig.update_layout(title='MACD Oscillator Bar')
+
+    return fig
+
+@capture("graph")
+def plot_awesome_ma(data_frame: pd.DataFrame):
+    df = awesome_signal_generation(data_frame, awesome_ma)
+
+    fig = go.Figure()
+
+    fig.add_trace(go.Scatter(x=df['Date'], y=df['awesome ma1'], mode='lines', name='Awesome MA1'))
+    fig.add_trace(go.Scatter(x=df['Date'], y=df['awesome ma2'], mode='lines', name='Awesome MA2', line=dict(dash='dot')))
+
+    fig.update_layout(title='AWESOME Moving Average')
+
+    return fig
 
 
+@capture("graph")
+def plot_macd_ma(data_frame: pd.DataFrame):
+    df = signal_generation(data_frame, ewmacd, 5, 34)
 
-    #moving average
-    fig=plt.figure()
-    ex=fig.add_subplot(211)
+    fig = go.Figure()
 
-    new['awesome ma1'].plot(label='awesome ma1')
-    new['awesome ma2'].plot(label='awesome ma2',linestyle=':')
+    fig.add_trace(go.Scatter(x=df['Date'], y=df['macd ma1'], mode='lines', name='MACD MA1'))
+    fig.add_trace(go.Scatter(x=df['Date'], y=df['macd ma2'], mode='lines', name='MACD MA2', line=dict(dash='dot')))
 
-    plt.legend(loc='best')
-    plt.grid(True)
-    plt.xticks([])
-    plt.xlabel('')
-    plt.title('Moving Average')
+    fig.update_layout(title='MACD Moving Average')
 
-    fig=plt.figure()
-    fx=fig.add_subplot(212,sharex=bx)
-    
-    new['macd ma1'].plot(label='macd ma1')
-    new['macd ma2'].plot(label='macd ma2',linestyle=':')
-
-    plt.legend(loc='best')
-    plt.grid(True)
-    plt.show()
+    return fig
 
 
 """
@@ -204,23 +239,29 @@ def portfolio(signals):
     
     return portfolio
 
-"""
-profit()
 
-Compare how the two strategies increase our asset value
-"""
-def profit(portfolio):
-        
-    gx=plt.figure()
-    gx.add_subplot(111)
+@capture("graph")
+def plot_macd_vs_awesome_profit(data_frame: pd.DataFrame):
+    #awesome oscillator uses 5 lags as short ma
+    #34 lags as long ma
+    #for the consistent comparison
+    #i apply the same to macd oscillator
+    ma1=5
+    ma2=34
+    signals=signal_generation(data_frame, ewmacd, ma1, ma2)
+    sigs = awesome_signal_generation(data_frame, awesome_ma)
+    p = portfolio(sigs)
+    fig = go.Figure()
 
-    portfolio['awesome asset'].plot()
-    portfolio['macd asset'].plot()
+    # Plotting Awesome Asset
+    fig.add_trace(go.Scatter(x=p.index, y=p['awesome asset'], mode='lines', name='Awesome Asset'))
 
-    plt.legend(loc='best')
-    plt.grid(True)
-    plt.title('Awesome VS MACD')
-    plt.show()
+    # Plotting MACD Asset
+    fig.add_trace(go.Scatter(x=p.index, y=p['macd asset'], mode='lines', name='MACD Asset'))
+
+    fig.update_layout(title='Awesome VS MACD')
+
+    return fig
 
 
 """
@@ -239,8 +280,16 @@ def mdd(series):
 
     return temp
 
-def stats(portfolio):
-    
+def macd_vs_awesome_stats(df: pd.DataFrame) -> pd.DataFrame:
+    #awesome oscillator uses 5 lags as short ma
+    #34 lags as long ma
+    #for the consistent comparison
+    #i apply the same to macd oscillator
+    ma1=5
+    ma2=34
+    signals = signal_generation(df, ewmacd, ma1, ma2)
+    sigs=awesome_signal_generation(signals,awesome_ma)
+    p = portfolio(sigs)
     stats=pd.DataFrame([0])
 
     #lets calculate some sharpe ratios
@@ -252,47 +301,5 @@ def stats(portfolio):
     stats['awesome mdd']=mdd(portfolio['awesome asset'])
     stats['macd mdd']=mdd(portfolio['macd asset'])
 
-    print(stats)
-
-def main():
-    
-    #awesome oscillator uses 5 lags as short ma
-    #34 lags as long ma
-    #for the consistent comparison
-    #i apply the same to macd oscillator
-    ma1=5
-    ma2=34
-
-    #downloading
-    #stdate=input('start date in format yyyy-mm-dd:')
-    stdate="2008-01-01"
-    #eddate=input('end date in format yyyy-mm-dd:')
-    eddate="2010-01-01"
-    #ticker=input('ticker:')
-    ticker="AAPL"
-    df=yf.download(ticker,start=stdate,end=eddate)
-
-    #slicing the downloaded dataset
-    #if the dataset is too large
-    #backtesting plot would look messy
-    #slicer=int(input('slicing:'))
-    slicer=0
-    signals=signal_generation(df,ewmacd,ma1,ma2)
-    sig=awesome_signal_generation(signals,awesome_ma)
-    new=sig[slicer:]
-    plot(new,ticker)
-    
-    portfo=portfolio(sig)
-    profit(portfo)
-    
-    stats(portfo)
-    
-    #from my tests
-    #macd has demonstrated a higher sharpe ratio
-    #it executes fewer trades but brings more profits
-    #however its maximum drawdown is higher than awesome oscillator
-    #which one is better?
-    #it depends on your risk averse level
-
-if __name__ == '__main__':
-    main()
+    #print(stats)
+    return stats

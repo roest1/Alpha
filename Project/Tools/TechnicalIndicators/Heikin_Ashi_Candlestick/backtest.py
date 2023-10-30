@@ -225,7 +225,6 @@ def profit(portfolio):
     #replace close price with total asset value
     bx.plot(portfolio['signals'].loc[portfolio['signals']==1].index,portfolio['total asset'][portfolio['signals']==1],lw=0,marker='^',c='g',label='long')
     bx.plot(portfolio['signals'].loc[portfolio['signals']<0].index,portfolio['total asset'][portfolio['signals']<0],lw=0,marker='v',c='r',label='short')
-    
     plt.legend(loc='best')
     plt.grid(True)
     plt.xlabel('Date')
