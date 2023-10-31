@@ -4,6 +4,10 @@ import numpy as np
 import pandas as pd
 import random
 
+import plotly.graph_objects as go
+from vizro.models.types import capture
+
+
 global colorlist # generate gradient colors
 colorlist = ['#fffb77',
  '#fffa77',
@@ -203,9 +207,6 @@ def monte_carlo(data, test_size = 0.5, num_simulations=100, **kwargs):
             choice = i
         
     return forecast_horizon, predicted, choice
-
-import plotly.graph_objects as go
-from vizro.models.types import capture
 
 @capture("graph")
 def monte_carlo_simulation(data_frame:pd.DataFrame=None):

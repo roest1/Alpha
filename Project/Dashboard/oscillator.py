@@ -1,5 +1,7 @@
 import numpy as np
 import pandas as pd
+import plotly.graph_objects as go
+from vizro.models.types import capture
 
 """
 ewma_macd()
@@ -101,9 +103,6 @@ def awesome_signal_generation(df,method):
     
     return signals
 
-import plotly.graph_objects as go
-
-from vizro.models.types import capture
 @capture("graph")
 def plot_awesome_positions_signals(data_frame: pd.DataFrame):
     df = awesome_signal_generation(data_frame, awesome_ma)
@@ -295,11 +294,11 @@ def macd_vs_awesome_stats(df: pd.DataFrame) -> pd.DataFrame:
     #lets calculate some sharpe ratios
     #note that i set risk free return at 0 for simplicity
     #alternatively we can use snp500 as a benchmark
-    stats['awesome sharpe']=(portfolio['awesome asset'].iloc[-1]/5000-1)/np.std(portfolio['awesome return'])
-    stats['macd sharpe']=(portfolio['macd asset'].iloc[-1]/5000-1)/np.std(portfolio['macd return'])
+    stats['awesome sharpe']=(p['awesome asset'].iloc[-1]/5000-1)/np.std(p['awesome return'])
+    stats['macd sharpe']=(p['macd asset'].iloc[-1]/5000-1)/np.std(p['macd return'])
 
-    stats['awesome mdd']=mdd(portfolio['awesome asset'])
-    stats['macd mdd']=mdd(portfolio['macd asset'])
+    stats['awesome mdd']=mdd(p['awesome asset'])
+    stats['macd mdd']=mdd(p['macd asset'])
 
     #print(stats)
     return stats

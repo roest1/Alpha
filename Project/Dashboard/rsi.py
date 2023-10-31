@@ -1,7 +1,8 @@
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
-import yfinance as yf
+import plotly.graph_objects as go
+from vizro.models.types import capture
+
 
 """
 smma()
@@ -57,48 +58,6 @@ def signal_generation(df,method,n=14):
     df['signals']=df['positions'].diff()
     
     return df[n:]
-
-"""
-plot()
-
-"""
-def plot(new,ticker):
-    
-    #the first plot is the actual close price with long/short positions
-    fig=plt.figure(figsize=(10,10))
-    ax=fig.add_subplot(211)
-    
-    new['Close'].plot(label=ticker)
-    ax.plot(new.loc[new['signals']==1].index,
-            new['Close'][new['signals']==1],
-            label='LONG',lw=0,marker='^',c='g')
-    ax.plot(new.loc[new['signals']==-1].index,
-            new['Close'][new['signals']==-1],
-            label='SHORT',lw=0,marker='v',c='r')
-
-    
-    plt.legend(loc='best')
-    plt.grid(True)
-    plt.title('Positions')
-    plt.xlabel('Date')
-    plt.ylabel('price')
-    
-    plt.show()
-    
-    #the second plot is rsi with overbought/oversold interval capped at 30/70
-    bx=plt.figure(figsize=(10,10)).add_subplot(212,sharex=ax)
-    new['rsi'].plot(label='relative strength index',c='#522e75')
-    bx.fill_between(new.index,30,70,alpha=0.5,color='#f22f08')
-    
-    bx.text(new.index[-45],75,'overbought',color='#594346',size=12.5)
-    bx.text(new.index[-45],25,'oversold',color='#594346',size=12.5)
-    
-    plt.xlabel('Date')
-    plt.ylabel('value')
-    plt.title('RSI')
-    plt.legend(loc='best')
-    plt.grid(True)
-    plt.show()
 
 """
 pattern_recognition()
@@ -169,8 +128,8 @@ def pattern_recognition(df,method,lag=14):
         
         #we have to make sure no holding positions
         #and the close price is not the maximum point of pattern finding horizon
-        if (df['cumsum'][i]==0) and  \
-        (df['Close'][i]!=max(df['Close'][i-period:i])):
+        if (df['cumsum'].iloc[i]==0) and  \
+        (df['Close'].iloc[i]!=max(df['Close'].iloc[i-period:i])):
             
             #get the head node j with maximum value in pattern finding period
             #note that dataframe is in datetime index
@@ -179,8 +138,8 @@ def pattern_recognition(df,method,lag=14):
             
             #if the head node j is significantly larger than node i
             #we would move on to the next phrase
-            if (np.abs(df['Close'][j]-df['Close'][i])>head*delta):
-                bottom=df['Close'][i]
+            if (np.abs(df['Close'].iloc[j]-df['Close'].iloc[i])>head*delta):
+                bottom=df['Close'].iloc[i]
                 moveon=True
             
             #we try to find node k between node j and node i
@@ -189,7 +148,7 @@ def pattern_recognition(df,method,lag=14):
             if moveon==True:
                 moveon=False
                 for k in range(j,i):    
-                    if (np.abs(df['Close'][k]-bottom)<delta):
+                    if (np.abs(df['Close'].iloc[k]-bottom)<delta):
                         moveon=True
                         break
             
@@ -202,7 +161,7 @@ def pattern_recognition(df,method,lag=14):
             if moveon==True:
                 moveon=False
                 for l in range(j,i-period+1,-1):
-                    if (np.abs(df['Close'][l]-bottom)<delta):
+                    if (np.abs(df['Close'].iloc[l]-bottom)<delta):
                         moveon=True
                         break
                     
@@ -213,7 +172,7 @@ def pattern_recognition(df,method,lag=14):
             if moveon==True:
                 moveon=False        
                 for m in range(i-period,l):
-                    if (np.abs(df['Close'][m]-bottom)<delta):
+                    if (np.abs(df['Close'].iloc[m]-bottom)<delta):
                         moveon=True
                         break
             
@@ -225,9 +184,9 @@ def pattern_recognition(df,method,lag=14):
             if moveon==True:
                 moveon=False        
                 n=df.index.get_loc(df['Close'][m:l].idxmax())
-                if (df['Close'][n]-bottom>shoulder*delta) and \
-                (df['Close'][j]-df['Close'][n]>shoulder*delta):
-                    top=df['Close'][n]
+                if (df['Close'].iloc[n]-bottom>shoulder*delta) and \
+                (df['Close'].iloc[j]-df['Close'].iloc[n]>shoulder*delta):
+                    top=df['Close'].iloc[n]
                     moveon=True
                     
             #we try to find shoulder node o between node k and node i
@@ -238,11 +197,11 @@ def pattern_recognition(df,method,lag=14):
             #it would help the algo to ignore this round of iteration for exiting the trade
             if moveon==True:        
                 for o in range(k,i):
-                    if (np.abs(df['Close'][o]-top)<delta):
+                    if (np.abs(df['Close'].iloc[o]-top)<delta):
                         df.at[df.index[i],'signals']=-1
                         df.at[df.index[i],'coordinates']='%s,%s,%s,%s,%s,%s,%s'%(m,n,l,j,k,o,i)
                         df['cumsum']=df['signals'].cumsum()
-                        entry_rsi=df['rsi'][i]
+                        entry_rsi=df['rsi'].iloc[i]
                         moveon=True
                         break
         
@@ -255,7 +214,7 @@ def pattern_recognition(df,method,lag=14):
         #well, this is for holding positions in case you wanna check on portfolio performance
         if entry_rsi!=0 and moveon==False:
             counter+=1
-            if (df['rsi'][i]-entry_rsi>exit_rsi) or \
+            if (df['rsi'].iloc[i]-entry_rsi>exit_rsi) or \
             (counter>exit_days):
                 df.at[df.index[i],'signals']=1
                 df['cumsum']=df['signals'].cumsum()
@@ -264,86 +223,197 @@ def pattern_recognition(df,method,lag=14):
             
     return df
 
-"""
-pattern_plot()
+@capture("graph")
+def plot_rsi_positions(data_frame: pd.DataFrame):
+    new = signal_generation(data_frame, rsi)
+    
+    
+    fig = go.Figure()
 
-visualize the pattern
-"""
-def pattern_plot(new,ticker):
-    
-    #this part is to get a small slice of dataframe
-    #so we can get a clear view of head-shoulder pattern
-    a,b=list(new[new['signals']!=0].iloc[2:4].index)
-    
-    #extract coordinates for head-shoulder pattern visualization
-    temp=list(map(int,new['coordinates'][a].split(',')))
-    indexlist=list(map(lambda x:new.index[x],temp))
-    
-    #slicing
-    c=new.index.get_loc(b)
-    newbie=new[temp[0]-30:c+20]
-    
-    #first plot is always price with positions
-    ax=plt.figure(figsize=(10,10)).add_subplot(211)
-        
-    newbie['Close'].plot(label=ticker)
-    ax.plot(newbie['Close'][newbie['signals']==1],marker='^',markersize=12, \
-            lw=0,c='g',label='LONG')
-    ax.plot(newbie['Close'][newbie['signals']==-1],marker='v',markersize=12, \
-            lw=0,c='r',label='SHORT')
-    
-    plt.legend(loc=0)
-    plt.title('Positions')
-    plt.xlabel('Date')
-    plt.ylabel('price')
-    plt.grid(True)
-    plt.show()
-    
-    #second plot is head-shoulder pattern on rsi
-    bx=plt.figure(figsize=(10,10)).add_subplot(212,sharex=ax)
-    
-    newbie['rsi'].plot(label='relative strength index',c='#f4ed71')
-    
-    #we plot the overbought/oversold interval, positions and pattern
-    bx.fill_between(newbie.index,30,70,alpha=0.6,label='overbought/oversold range',color='#000d29')
-    bx.plot(newbie['rsi'][indexlist], \
-            lw=3,alpha=0.7,marker='o', \
-            markersize=6,c='#8d2f23',label='head-shoulder pattern')
-    bx.plot(newbie['rsi'][newbie['signals']==1],marker='^',markersize=12, \
-            lw=0,c='g',label='LONG')
-    bx.plot(newbie['rsi'][newbie['signals']==-1],marker='v',markersize=12, \
-            lw=0,c='r',label='SHORT')
+    # Plotting the Close prices
+    fig.add_trace(go.Scatter(x=new.index, y=new['Close'], mode='lines', name=new["Symbol"].iloc[0]))
 
-    #put some captions on head and shoulders
-    for i in [(1,'Shoulder'),(3,'Head'),(5,'Shoulder')]:
-        plt.text(indexlist[i[0]], newbie['rsi'][indexlist[i[0]]]+2, \
-             '%s'%i[1],fontsize=10,color='#e4ebf2', \
-             horizontalalignment='center', \
-            verticalalignment='center')
-        
-    plt.title('RSI')
-    plt.legend(loc=1)
-    plt.xlabel('Date')
-    plt.ylabel('value')
-    plt.grid(True)
-    plt.show()
+    # Plotting the LONG signals
+    fig.add_trace(go.Scatter(x=new[new['signals'] == 1].index,
+                             y=new['Close'][new['signals'] == 1],
+                             mode='markers',
+                             marker=dict(symbol='triangle-up', size=10, color='green'),
+                             name='LONG'))
+
+    # Plotting the SHORT signals
+    fig.add_trace(go.Scatter(x=new[new['signals'] == -1].index,
+                             y=new['Close'][new['signals'] == -1],
+                             mode='markers',
+                             marker=dict(symbol='triangle-down', size=10, color='red'),
+                             name='SHORT'))
+
+    # Updating the layout to add titles, labels
+    fig.update_layout(
+        title='RSI Positions',
+        xaxis_title='Date',
+        yaxis_title='Price',
+    )
+    
+    return fig
+
+@capture("graph")
+def plot_rsi_head_shoulders(data_frame: pd.DataFrame):
+    new = signal_generation(data_frame, rsi)
+    
+    fig = go.Figure()
+
+    # Plotting the RSI values
+    fig.add_trace(go.Scatter(x=new.index, y=new['rsi'], mode='lines', name='Relative Strength Index', line=dict(color='#522e75')))
+    
+    # Adding the shaded region for overbought/oversold range
+    fig.add_shape(
+        type="rect",
+        x0=new.index[0],
+        x1=new.index[-1],
+        y0=30,
+        y1=70,
+        fillcolor="#f22f08",
+        opacity=0.5,
+        layer="below",
+        line_width=0,
+    )
+    
+    # Adding overbought and oversold annotations
+    fig.add_annotation(
+        x=new.index[-45],
+        y=75,
+        text="overbought",
+        showarrow=False,
+        font=dict(color="#594346", size=12.5),
+        yshift=10
+    )
+
+    fig.add_annotation(
+        x=new.index[-45],
+        y=25,
+        text="oversold",
+        showarrow=False,
+        font=dict(color="#594346", size=12.5),
+        yshift=-10
+    )
+
+    # Updating the layout to add titles, labels
+    fig.update_layout(
+        title='RSI',
+        xaxis_title='Date',
+        yaxis_title='Value',
+        template="plotly_white",  # This is to mimic the background grid of matplotlib
+        showlegend=True
+    )
+    
+    return fig
+
+
+@capture("graph")
+def plot_rsi_pattern_positions(data_frame: pd.DataFrame):
+    new = pattern_recognition(data_frame, rsi)
+    
+    # Get a small slice of dataframe for a clear view of head-shoulder pattern
+    a, b = list(new[new['signals'] != 0].iloc[2:4].index)
+    temp = list(map(int, new['coordinates'][a].split(',')))
+    c = new.index.get_loc(b)
+    newbie = new[temp[0] - 30 : c + 20]
+    
+    fig = go.Figure()
+
+    # Plotting the Close prices
+    fig.add_trace(go.Scatter(x=newbie.index, y=newbie['Close'], mode='lines', name=new["Symbol"].iloc[0]))
+
+    # Plotting the LONG signals
+    fig.add_trace(go.Scatter(x=newbie[newbie['signals'] == 1].index,
+                             y=newbie['Close'][newbie['signals'] == 1],
+                             mode='markers',
+                             marker=dict(symbol='triangle-up', size=10, color='green'),
+                             name='LONG'))
+
+    # Plotting the SHORT signals
+    fig.add_trace(go.Scatter(x=newbie[newbie['signals'] == -1].index,
+                             y=newbie['Close'][newbie['signals'] == -1],
+                             mode='markers',
+                             marker=dict(symbol='triangle-down', size=10, color='red'),
+                             name='SHORT'))
+
+    # Updating the layout to add titles, labels
+    fig.update_layout(
+        title='RSI Pattern Positions',
+        xaxis_title='Date',
+        yaxis_title='Price',
+        template="plotly_white"  # This is to mimic the background grid of matplotlib
+    )
+    
+    return fig
     
 
-def main():
+@capture("graph")
+def plot_rsi_pattern_head_shoulder(data_frame: pd.DataFrame):
+    new = pattern_recognition(data_frame, rsi)
     
-    #ticker='FCAU'
-    ticker = 'AAPL'
-    startdate='2016-01-01'
-    enddate='2018-01-01'
-    df=yf.download(ticker,start=startdate,end=enddate)
-    new=signal_generation(df,rsi,n=14)
-
-    plot(new,ticker)
-    new_patterns = pattern_recognition(df, rsi)
-    pattern_plot(new_patterns, ticker)
-
-    # calculate stats with code from Heikin-Ashi_Candlestick/backtest.py
+    a, b = list(new[new['signals'] != 0].iloc[2:4].index)
+    temp = list(map(int, new['coordinates'][a].split(',')))
+    indexlist = list(map(lambda x: new.index[x], temp))
     
+    c = new.index.get_loc(b)
+    newbie = new[temp[0] - 30 : c + 20]
+    
+    fig = go.Figure()
 
-if __name__ == '__main__':
-    main()
+    # Plotting the RSI values
+    fig.add_trace(go.Scatter(x=newbie.index, y=newbie['rsi'], mode='lines', name='Relative Strength Index', line=dict(color='#f4ed71')))
+    
+    # Plotting the head-shoulder pattern on RSI
+    fig.add_trace(go.Scatter(x=indexlist, y=newbie['rsi'][indexlist],
+                             mode='lines+markers',
+                             name='Head-Shoulder Pattern',
+                             line=dict(color='#8d2f23', width=3),
+                             marker=dict(symbol='circle', size=6, color='#8d2f23')))
+    
+    # Plotting the LONG signals
+    fig.add_trace(go.Scatter(x=newbie[newbie['signals'] == 1].index,
+                             y=newbie['rsi'][newbie['signals'] == 1],
+                             mode='markers',
+                             marker=dict(symbol='triangle-up', size=10, color='green'),
+                             name='LONG'))
+
+    # Plotting the SHORT signals
+    fig.add_trace(go.Scatter(x=newbie[newbie['signals'] == -1].index,
+                             y=newbie['rsi'][newbie['signals'] == -1],
+                             mode='markers',
+                             marker=dict(symbol='triangle-down', size=10, color='red'),
+                             name='SHORT'))
+
+    # Adding the shaded region for overbought/oversold range
+    fig.add_shape(
+        type="rect",
+        x0=newbie.index[0],
+        x1=newbie.index[-1],
+        y0=30,
+        y1=70,
+        fillcolor="#000d29",
+        opacity=0.6,
+        line_width=0,
+    )
+
+    # Annotations for head and shoulders
+    for i, label in [(1, 'Shoulder'), (3, 'Head'), (5, 'Shoulder')]:
+        fig.add_annotation(
+            x=indexlist[i],
+            y=newbie['rsi'][indexlist[i]] + 2,
+            text=label,
+            showarrow=False,
+            font=dict(color="#e4ebf2", size=10)
+        )
+
+    # Updating the layout to add titles, labels
+    fig.update_layout(
+        title='RSI Head-Shoulder Pattern',
+        xaxis_title='Date',
+        yaxis_title='RSI Value',
+        template="plotly_white"
+    )
+    
+    return fig
