@@ -100,7 +100,11 @@ def plot_parabolic_sar(data_frame:pd.DataFrame):
     del df['Adj Close']
     del df['Volume']
 
-    df.reset_index(inplace=True, drop=False) # fix errors
+    if 'level_0' in df.columns:
+        df.drop(columns='level_0', inplace=True)
+    df.reset_index(inplace=True, drop=False)
+
+
     df=signal_generation(df,parabolic_sar)
 
     #convert back to time series for plotting

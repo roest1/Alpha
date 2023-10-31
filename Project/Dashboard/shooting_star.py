@@ -109,6 +109,8 @@ def signal_generation(df,method,
 @capture("graph")
 def plot_shooting_star_candlesticks(data_frame: pd.DataFrame):
     # Preprocessing the dataframe
+    if 'level_0' in data_frame.columns:
+        data_frame.drop(columns='level_0', inplace=True)
     data_frame.reset_index(inplace=True)
     data_frame['Date'] = pd.to_datetime(data_frame['Date'])
     
@@ -116,7 +118,8 @@ def plot_shooting_star_candlesticks(data_frame: pd.DataFrame):
     new_data = signal_generation(data_frame, shooting_star)
     
     # Get subset for better viz to highlight shooting star
-    subset = new_data.loc[5268:5283].copy()
+    #subset = new_data.loc[5268:5283].copy()
+    subset = new_data.copy()
     subset.reset_index(inplace=True, drop=True)
     
     fig = go.Figure(data=[go.Candlestick(x=subset['Date'],
@@ -133,6 +136,8 @@ def plot_shooting_star_candlesticks(data_frame: pd.DataFrame):
 @capture("graph")
 def plot_shooting_star_positions(data_frame: pd.DataFrame):
     # Preprocessing the dataframe
+    if 'level_0' in data_frame.columns:
+        data_frame.drop(columns='level_0', inplace=True)
     data_frame.reset_index(inplace=True)
     data_frame['Date'] = pd.to_datetime(data_frame['Date'])
     
@@ -140,7 +145,8 @@ def plot_shooting_star_positions(data_frame: pd.DataFrame):
     new_data = signal_generation(data_frame, shooting_star)
     
     # Get subset for better viz to highlight shooting star
-    subset = new_data.loc[5268:5283].copy()
+    #subset = new_data.loc[5268:5283].copy()
+    subset = new_data.copy()
     subset.reset_index(inplace=True, drop=True)
     
     fig = go.Figure()

@@ -96,7 +96,8 @@ Unique method to filter out noise
 def heikin_ashi(data):
     df=data.copy()
     
-    df.reset_index(inplace=True)
+    df.reset_index(drop=True, inplace=True)
+
         
     #heikin ashi close
     df['HA close']=(df['Open']+df['Close']+df['High']+df['Low'])/4
