@@ -1,106 +1,135 @@
-# Alpha Project
+# Alpha Predictor
 
----
+* **Problem**: To devise a profitable trading strategy that takes into account the various intricacies and risks of the market. 
 
-## To Do:
+### Psuedo Code
 
-* Get Data (WRDS Cloud?)
+```python
 
-* Create volatility X momentum matrix
-    - Calculations for volatility and momentum
+yfinance.download(NASDAQ)
 
-## Questions:
+backtest()
 
-* What strategies/indicators correspond to (volatility X momentum) combination
+    for each day in NASDAQ:
+        find cointegrated stocks # To potentially run cointegrated trading strategy
+        get implied volatility # stock-dependent
+        get momentum # stock-dependent
 
-* Ways to compute momentum and volatility
+        """
+        Technical Indicators (already implemented):
+        * Bollinger Bands
+        * Dual Thrust
+        * Heikin-Ashi
+        * Monte Carlo
+        * MACD
+        * Awesome Oscillator
+        * Parabolic SAR
+        * RSI
+        * Shooting Star
+        """
+        get technical indicators # stock-dependent
 
-## Notes:
+        """
+        Chart Patterns (Ideas):
+        * Head and Shoulders/ Inverse Head and Shoulders
+        * Double Top/Bottom
+        * Triple Top/Bottom
+        * Cup and Handle
+        * Flag and Pennant
+        * Ascending/Descending Triangle
+        * Symmetrical Triangle
+        * Wedge
+        * Channel
 
-* Heikin-Ashi_Candlestick/backtest.py is the only py file with stats calculation (will be used later probably)
+        """
+        get chart patterns # stock-dependent
 
-* Options level output : [WRDS](https://wrds-www.wharton.upenn.edu/pages/get-data/option-suite-wrds/us-option-level-output/)
+        """
+        Differential Equations (Ideas):
+        * Black-Scholes (based on Geometric Brownian Motion (GBM))
+        * Mean Reversion
+        * Jump Diffusion
+        """
+        get differential equation modeling # stock-dependent or market-dependent
 
-* Install bloomberg api : 
+        """
+        Sentiment Analysis (Ideas):
+        * Twitter scraping
+        * News Title scraping
+        * Financial forum scraping
+        """
+        get sentiment analysis # stock-dependent or market-dependent
 
-```bash
-% python -m pip install --index-url=https://bcms.bloomberg.com/pip/simple blpapi
+        get arbitrage strategy # market-dependent
+
+        # get high-frequency strategies # market dependent (requires high frequency data)
+
+        """
+        Fundamental Analysis (Ideas):
+        * Intrinsic Value
+        * Financial Ratios
+        * Industry Trends
+        * Economic Indicators
+        *  
+        """
+        get fundamental analysis
+
+        combine techincal and fundamental analysis
+
+        get behavioral economics
+
+        """
+        Macro strategies
+        * interest rates
+        * political events
+        * international trade
+
+        """
+        get global macro strategies
+
+
+        """
+        ML:
+        * Algorithmic pattern recognition (unsupervised learning and deep learning)
+        * 
+        """
+        predict market future # Use ML
+
+        evaluate risk
+
+        optimize portfolio
+
+        """
+        Economic Calendar Trading Ideas:
+        * Trade around interest rate decisions
+        * unemployment reports
+        * GDP announcements 
+
+        """
+        economic calendar trading
+
+        trading signals = analyze_market(
+            cointegrated stocks, 
+            implied volatility,
+            momentum,
+            technical indicators,
+            chart patterns,
+            differential equation modeling,
+            sentiment analysis,
+            arbitrage strategy,
+            fundamental analysis,
+            behavioral economics,
+            global macro strategies,
+            ML market future,
+            ML patterns,
+            economic calendar trading
+            )
+        
+        adjusted signals = apply risk optimization(
+            trading signals,
+            risk,
+            portfolio optimization)
+
+
+        execute trades(adjusted signals)
 ```
-  
----
-
-## Jobs
-
-### Riley's doing:
-
-**Still working on :**
-
-* Get data
-
-* QuantamentalAnalysis/
-    - PortfolioOptimization
-    - WidsomOfCrowds
-
-* TechnicalIndicators/
-    - DualThrust
-
-* Summarizing Documents
-
-### Trevor's doing:
-
-
----
-
-## Parameter Checklist
-
-(Parameters to record)
-
-**Price/Returns/Contract**
-
-* What strategy tested
-
-* Underlying -> What stock
-    - Price (open and close vlaues of net cost to open and close strategy)
-    - Expiration
-    - Strike Price
-
-* Days Open
-
-* Open Interest -> On strategy open
-
-**Volatility (Values on open and close)**
-
-* IV (30 day)
-
-* Historical Volatility
-
-* IV Percentile or Rank
-
-**Momentum (Values on open and close)**
-
-* Indicator Signals
-    - RSI (14 period)
-    - ADX
-    - On balance volume % change open to close
-
-**Events (IF applicable)**
-
-* Earnings
-
-* M&A
-
-* Industry events (Exogeneous)
-  
-**Macro (Values on open and close)**
-
-* VIX
-    - Equities short term Volume
-
-* MOVE Index
-    - Fixed income volatility
-
-* Yield Curve (10Y - 2Y maturities)
-    - Current 10Y - 2Y = -.3
-
----
-
