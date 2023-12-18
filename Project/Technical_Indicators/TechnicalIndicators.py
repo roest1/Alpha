@@ -13,6 +13,25 @@ class TechnicalIndicators:
         self.df = self.macd_signal_generation()
         self.df = self.parabolic_sar_signal_generation()
         self.df = self.rsi_signal_generation()
+        self.df = self.calculate_atr()
+
+    # ATR could be used in the future for 
+    # Stop Loss
+    # Position sizing
+    # Breakout strategies
+    # Trend confirmations
+    def calculate_atr(self, period=14):
+        df = self.df
+        df['High-Low'] = df['High'] - df['Low']
+        df['High-PrevClose'] = abs(df['High'] - df['Close'].shift(1))
+        df['Low-PrevClose'] = abs(df['Low'] - df['Close'].shift(1))
+        
+        tr = df[['High-Low', 'High-PrevClose', 'Low-PrevClose']].max(axis=1)
+        atr = tr.rolling(window=period).mean()
+
+        df['ATR'] = atr
+        df.drop(['High-Low', 'High-PrevClose', 'Low-PrevClose'], axis=1, inplace=True)
+        return df
 
     def bollinger_bands_signal_generation(self, window=20, num_of_std=2):
         df = self.df

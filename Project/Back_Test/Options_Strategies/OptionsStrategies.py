@@ -4,13 +4,14 @@ import pandas as pd
 Notes:
 
 The current implementation for selecting ITM, ATM, and OTM options is based on the strike_preference parameter. 
-You could enhance this logic to dynamically select strike prices based on specific trading strategies or market conditions.
+You could enhance this logic to dynamically select strike prices based on specific trading strategies or market conditions (ie: volatility, time to expiration, directional bias from technical indicators)
 
 Add functionality to calculate and return important metrics like potential profit/loss, break-even points, or risk/reward ratios for selected options.
 
-
+Implement logic to handle option expiry, which is a crucial aspect of options trading. This includes deciding whether to exercise the option, let it expire, or roll it over.
 
 """
+
 class OptionsStrategies:
     def __init__(self, options_data):
         """

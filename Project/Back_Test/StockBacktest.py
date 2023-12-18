@@ -1,7 +1,7 @@
 import plotly.graph_objects as go
+import numpy as np
 
-
-class IndicatorBacktest:
+class StockBacktest:
     def __init__(self, df, initial_capital, position_size):
         self.df = df
         self.initial_capital = initial_capital
@@ -20,8 +20,22 @@ class IndicatorBacktest:
         fig.add_trace(go.Scatter(x=self.df.index,
                       y=self.df['Close'], mode='lines', name='Close'))
         return fig
+    
+    # Dynamic Position Sizing Methods
+    def fixed_fractional_position_size(self, risk_fraction):
+        return self.capital * risk_fraction
 
-    def get_buy_sell_coordinates(self, signal_column):
+    def volatility_adjusted_position_size(self, atr, risk_per_share):
+        return risk_per_share / atr
+
+    def equity_curve_based_position_size(self, lookback, risk_increase_factor):
+        recent_performance = np.mean(self.profits[-lookback:])
+        return self.position_size * risk_increase_factor if recent_performance > 0 else self.position_size
+
+    def uniform_position_size(self):
+        return self.position_size
+
+    def get_buy_sell_coordinates(self, signal_column, position_sizing_strategy, *args):
         df = self.df
         capital = self.capital
         position_size = self.position_size
@@ -35,23 +49,49 @@ class IndicatorBacktest:
 
         for i in range(len(df)):
             if df[signal_column].iloc[i] == 1:
+                # Determine position size based on the chosen strategy
+                if position_sizing_strategy == 'fixed_fractional':
+                    position_size = self.fixed_fractional_position_size(*args)
+                elif position_sizing_strategy == 'volatility_adjusted':
+                    position_size = self.volatility_adjusted_position_size(
+                        df['ATR'].iloc[i], *args)
+                elif position_sizing_strategy == 'equity_curve_based':
+                    position_size = self.equity_curve_based_position_size(
+                        *args)
+                elif position_sizing_strategy == 'uniform':
+                    position_size = self.uniform_position_size()
+                else:
+                    position_size = self.position_size
+
                 buy_signals_x.append(df.index[i])
                 buy_signals_y.append(df['Close'].iloc[i])
                 shares += position_size / df['Close'].iloc[i]
-            elif df[signal_column].iloc[i] == -1:
+
+            elif df[signal_column].iloc[i] == -1 and shares > 0:
                 sell_signals_x.append(df.index[i])
                 sell_signals_y.append(df['Close'].iloc[i])
-                if shares > 0:
-                    profit = shares * df['Close'].iloc[i] - position_size
-                    capital += profit
-                    profits.append(profit)
-                    shares = 0
+                profit = shares * df['Close'].iloc[i] - self.position_size
+                capital += profit
+                profits.append(profit)
+                shares = 0
 
         self.capital = capital
         self.shares = shares
         self.profits = profits
 
         return buy_signals_x, buy_signals_y, sell_signals_x, sell_signals_y
+    
+    # Method to Compare Position Sizing Strategies
+    def compare_position_sizing_strategies(self, signal_column, strategies, strategy_params):
+        results = {}
+        for strategy in strategies:
+            self.reset_state()
+            # Safeguard against KeyError
+            params = strategy_params.get(strategy, [])
+            buy_x, buy_y, sell_x, sell_y = self.get_buy_sell_coordinates(
+                signal_column, strategy, *params)
+            results[strategy] = self.capital
+        return results
 
     def add_buy_sell_signals(self, fig, signal_column):
         buy_signals_x, buy_signals_y, sell_signals_x, sell_signals_y = self.get_buy_sell_coordinates(

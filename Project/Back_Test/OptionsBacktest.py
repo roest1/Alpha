@@ -1,6 +1,24 @@
 import pandas as pd
 from Options_Strategies.OptionsStrategies import *
 
+"""
+Need to do:
+
+Add trade execution logic:
+- include the mechanics of opening and closing option positions. This should account for premium paid or received, and the impact on capital.
+
+Position sizing and capital allocation strategies:
+- Unlike stocks, options require careful management of leverage and margin requirements.
+
+Performance Metrics: 
+- Develop a comprehensive performance evaluation method, including metrics like Sharpe ratio, maximum drawdown, and profit/loss over time.
+
+Trade Management: 
+- Implement logic to manage ongoing option trades. This includes monitoring for stop-loss or take-profit conditions, and adjusting positions as necessary.
+
+Risk Management: 
+- Add risk management strategies, such as setting maximum drawdown limits or diversifying across different options strategies.
+"""
 class OptionsBacktest:
     def __init__(self, stock_data, options_data, initial_capital):
         """
